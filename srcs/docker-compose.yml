@@ -1,0 +1,112 @@
+secrets:
+  db_password:
+    file: ../secrets/db_password.txt
+  db_root_password:
+    file: ../secrets/db_root_password.txt
+  credentials:
+    file: ../secrets/credentials.txt
+
+networks:
+  inception:
+    driver: bridge
+
+services:
+  mariadb:
+    restart: on-failure
+    build:
+      context: ./requirements/mariadb
+      dockerfile: Dockerfile
+      args: 
+        USR_INF: ${USER}
+    hostname:
+      mariadb
+    networks: 
+      - inception
+    env_file:
+      ".env"
+    volumes:
+      - DB:/home/${USER}/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mariadb-admin ping -u ${WORDPRESSUSER} -p"$(cat /run/secrets/db_password)"
+      interval: 5s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    secrets:
+      - db_password
+      - db_root_password
+      - credentials
+    image:
+      mariadb
+
+  wordpress:
+    restart: on-failure
+    build:
+      context: ./requirements/wordpress
+      dockerfile: Dockerfile
+      args:
+        USR_INF: ${USER}
+    hostname:
+      wordpress
+    networks:
+      - inception
+    volumes:
+      - Wordpress:/home/${USER}/data
+    env_file:
+      ".env"
+    depends_on:
+      mariadb:
+        condition: service_healthy 
+    healthcheck:
+      test: ["CMD", "/usr/bin/bash", "-c", "echo hello > /dev/tcp/wordpress/9000"]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    secrets:
+      - db_password
+      - db_root_password
+      - credentials
+    image:
+      wordpress
+      
+  nginx:
+    restart: on-failure
+    build:
+      context: ./requirements/nginx
+      dockerfile: Dockerfile
+      args:
+        USR_INF: ${USER}
+    hostname:
+      nginx
+    networks:
+      - inception
+    volumes:
+      - Wordpress:/home/${USER}/data
+    ports:
+      - "443:443"
+    env_file:
+      ".env"
+    depends_on:
+      mariadb: 
+        condition: service_healthy
+      wordpress:
+        condition: service_healthy
+    image:
+      nginx
+
+volumes:
+  DB:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/${USER}/data/db
+  Wordpress:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/${USER}/data/wordpress
