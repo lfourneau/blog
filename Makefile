@@ -10,15 +10,28 @@ all: $(CONFIG_FILES)
 	@sudo mkdir -p ${HOME}/data/db
 	@sudo mkdir -p ${HOME}/data/wordpress
 	if ! grep "${USER}" /etc/hosts; then echo "127.0.0.1	${USER}.42.fr" | sudo tee -a /etc/hosts; fi
-	cd ./srcs && docker compose up --build -d 
+	cd ./srcs && docker-compose up --build -d 
+
+up:
+	docker-compose up --build -d
+
+down:
+	docker-compose down
+
+start:
+	docker-compose start
+
+stop:
+	docker-compose stop
+
 clean:
 	@echo "Shutting down docker but keeping data"
-	cd ./srcs && docker compose down > /dev/null
+	cd ./srcs && docker-compose down > /dev/null
 	@echo "The services are now down"
 
 fclean:
 	@echo "Shutting down docker and deleting all files"
-	cd ./srcs && docker compose down --rmi all -v
+	cd ./srcs && docker-compose down --rmi all -v
 	@sudo rm -rf ${HOME}/data/db 
 	@sudo rm -rf ${HOME}/data/wordpress
 	@echo "The deletetion and shutdown is complete"
