@@ -13,16 +13,16 @@ all: $(CONFIG_FILES)
 	cd ./srcs && docker-compose up --build -d 
 
 up:
-	docker-compose up --build -d
+	cd ./srcs && docker-compose up --build -d
 
 down:
-	docker-compose down
+	cd ./srcs && docker-compose down
 
 start:
-	docker-compose start
+	cd ./srcs && docker-compose start
 
 stop:
-	docker-compose stop
+	cd ./srcs && docker-compose stop
 
 clean:
 	@echo "Shutting down docker but keeping data"
